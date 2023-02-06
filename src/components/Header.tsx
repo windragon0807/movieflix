@@ -1,69 +1,53 @@
-import { Link, useMatch, useNavigate } from "react-router-dom";
-import styled from "styled-components";
-import { motion, useAnimation, useScroll } from "framer-motion";
 import { useState, useEffect } from "react";
+import styled from "styled-components";
+import { Link, useMatch, useNavigate } from "react-router-dom";
+import { motion, useAnimation, useScroll } from "framer-motion";
 import { useForm } from "react-hook-form";
 
-const navVariants = {
-    top: {
-        backgroundColor: "rgba(0, 0, 0, 0)",
-    },
-    scroll: {
-        backgroundColor: "rgba(0, 0, 0, 1)",
-    },
-};
-
-const logoVariants = {
-    normal: {
-        fillOpacity: 1, // opacity가 아닌 fillOpacity 속성임을 주의
-    },
-    hover: {
-        fillOpacity: [0, 1, 0],
-        transition: {
-            repeat: Infinity, // 🏷️ 무한 반복 애니메이션
-        },
-    },
-};
-
-interface IForm {
+interface Form {
     keyword: string;
 }
 
 const Header = () => {
     const homeMatch = useMatch("/");
     const tvMatch = useMatch("/tv");
-    // 🏷️ useAnimation을 활용한 스크롤다운 애니메이션
+
+    // 🏷️ useAnimation을 활용한 scroll-down 애니메이션
     const { scrollY } = useScroll();
     const navAnimation = useAnimation();
     useEffect(() => {
-        // 🏷️ scrollY 활용 방법
+        // 💡 scrollY 활용 방법
         scrollY.onChange(() => {
+            // scrollY는 단순한 number가 아니다.
             if (scrollY.get() > 80) {
-                // scrollY는 단순한 number가 아니다.
                 navAnimation.start("scroll");
             } else {
                 navAnimation.start("top");
             }
         });
     }, [scrollY, navAnimation]);
-    // 📌 상태 변화와 상태를 부착한 검색 공간 UI 변화 애니메이션
-    const [searchOpen, setSearchOpen] = useState(false);
+
+    // 🏷️ 상태 변화와 상태를 부착한 검색 공간 UI 변화 애니메이션
+    const [searchOpen, setSearchOpen] = useState<boolean>(false);
     const toggleSearch = () => setSearchOpen((prev) => !prev);
-    // 📌 react-hook-form 기능을 활용한 검색후 페이지 라우트 로직
+    // ✨ [2023.02.06] 검색 창이 열려 있으면, 헤더 아무 곳이나 클릭해도 검색 창이 닫히도록 설정
+    const searchClose = () => searchOpen && setSearchOpen(false);
+
+    // 🏷️ react-hook-form 기능을 활용한 검색 후 페이지 라우트 로직
     const navigate = useNavigate();
-    const { register, handleSubmit } = useForm<IForm>();
-    const onValid = (data: IForm) => {
+    const { register, handleSubmit } = useForm<Form>();
+    const onValid = (data: Form) => {
         navigate(`/search?keyword=${data.keyword}`);
     };
 
     return (
-        // 🏷️ useAnimation을 활용한 스크롤다운 애니메이션
-        <Nav variants={navVariants} animate={navAnimation} initial={"top"}>
+        // 🏷️ useAnimation을 활용한 scroll-down 애니메이션
+        <Nav variants={navVariants} animate={navAnimation} initial={"top"} onClick={searchClose}>
             <Row>
                 <Logo
                     variants={logoVariants}
                     animate="normal"
-                    whileHover="hover" // 🏷️
+                    whileHover="hover"
                     xmlns="http://www.w3.org/2000/svg"
                     width="1024"
                     height="276.742"
@@ -84,29 +68,51 @@ const Header = () => {
                 <Search onSubmit={handleSubmit(onValid)}>
                     <motion.svg
                         onClick={toggleSearch}
-                        animate={{ x: searchOpen ? -212 : 0 }}
+                        animate={{ x: searchOpen ? -220 : 0 }}
                         transition={{ type: "linear" }} // 🏷️ animation 종류
                         fill="currentColor"
                         viewBox="0 0 20 20"
                         xmlns="http://www.w3.org/2000/svg"
+                        style={{ cursor: "pointer" }}
                     >
                         <path
                             fillRule="evenodd"
                             d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
                             clipRule="evenodd"
-                        ></path>
+                        />
                     </motion.svg>
                     <Input
                         {...register("keyword", { required: true, minLength: 2 })}
                         initial={{ scaleX: 0 }}
                         transition={{ type: "linear" }}
                         animate={{ scaleX: searchOpen ? 1 : 0 }}
-                        placeholder="제목, 사람, 장르"
+                        placeholder="검색어를 입력해주세요"
                     />
                 </Search>
             </Row>
         </Nav>
     );
+};
+
+const navVariants = {
+    top: {
+        backgroundColor: "rgba(0, 0, 0, 0)",
+    },
+    scroll: {
+        backgroundColor: "rgba(0, 0, 0, 1)",
+    },
+};
+
+const logoVariants = {
+    normal: {
+        fillOpacity: 1, // opacity가 아닌 fillOpacity 속성임을 주의
+    },
+    hover: {
+        fillOpacity: [0, 1, 0],
+        transition: {
+            repeat: Infinity, // 🏷️ 무한 반복 애니메이션
+        },
+    },
 };
 
 const Nav = styled(motion.nav)`
@@ -176,19 +182,27 @@ const Search = styled.form`
     svg {
         height: 25px;
     }
+    width: 100%;
+    height: 100%;
 `;
 
 const Input = styled(motion.input)`
     transform-origin: right center; // 🏷️ 애니메이션 시작점
     position: absolute;
     right: 0px;
-    padding: 5px 10px;
-    padding-left: 40px;
+    padding: 10px 15px;
+    padding-left: 43px;
     z-index: -1;
     color: white;
     font-size: 16px;
     background-color: rgba(0, 0, 0, 0.7);
-    border: 1px solid ${(props) => props.theme.white.lighter};
+    border: 2px solid ${(props) => props.theme.white.lighter};
+    border-radius: 30px;
+    // 🩹 [2023.02.06] Input 박스가 focus 되었을 때, border가 1px로 변하는 현상 => input의 outline 문제
+    &:focus {
+        outline: none;
+        border-width: 3px;
+    }
 `;
 
 export default Header;

@@ -1,58 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
-import styled from "styled-components";
-import { motion, AnimatePresence, useScroll } from "framer-motion";
-import { getMovies, IGetMoviesResult } from "../services/api";
-import { makeImagePath } from "../services/utils";
 import { useState } from "react";
+import styled from "styled-components";
 import { useNavigate, useMatch } from "react-router-dom";
-
-const rowVariants = {
-    hidden: {
-        x: window.outerWidth + 5,
-        // 🏷️ 브라우저 width만큼
-        // 🏷️ 애니메이션으로 넘어갈 때 마지막과 처음 사이 붙어있는 부분 gap 주기 위해 10 추가 부여
-    },
-    visible: {
-        x: 0,
-    },
-    exit: {
-        x: -window.outerWidth - 5,
-    },
-};
-
-const boxVariants = {
-    normal: {
-        scale: 1,
-    },
-    hover: {
-        scale: 1.3,
-        y: -80,
-        transition: {
-            // 🏷️ hover 시에만 적용
-            delay: 0.5,
-            duaration: 0.1,
-            type: "tween", // spring -> linear
-        },
-    },
-};
-
-const infoVariants = {
-    hover: {
-        opacity: 0.8,
-        transition: {
-            delay: 0.5,
-            duaration: 0.1,
-            type: "tween",
-        },
-    },
-};
-
-const offset = 6;
+import { motion, AnimatePresence, useScroll } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { getMovies, GetMoviesResult } from "../services/api";
+import { makeImagePath } from "../services/utils";
 
 const Home = () => {
     const navigate = useNavigate();
-    const { data, isLoading } = useQuery<IGetMoviesResult>(["movies", "nowPlaying"], getMovies);
-    // 📌 배너 클릭 시, 슬라이더 인덱스 증가시키기
+    const { data, isLoading } = useQuery<GetMoviesResult>(["movies", "nowPlaying"], getMovies);
+
+    // 🏷️ 배너 클릭 시, 슬라이더 인덱스 증가시키기
     const [index, setIndex] = useState(0); // Slider 페이지 수
     const [leaving, setLeaving] = useState(false); // Slider 애니메이션 진행 상태
     const toggleLeaving = () => setLeaving((prev) => !prev);
@@ -71,7 +29,6 @@ const Home = () => {
         navigate(`/movies/${movieId}`);
     };
     const bigMovieMatch = useMatch("/movies/:movieId");
-    // console.log(bigMovieMatch);
     const onOverlayClick = () => navigate("/"); // 영화 상세보기 뒷 배경 클릭 시, 홈으로 이동
     const { scrollY } = useScroll();
     // 현재 movieId에 해당하는 데이터 하나만 가져오기
@@ -87,21 +44,20 @@ const Home = () => {
                 <>
                     <Banner
                         onClick={increaseIndex}
-                        bgphoto={makeImagePath(data?.results[0].backdrop_path || "")} // 🏷️
+                        bgphoto={makeImagePath(data?.results[0].backdrop_path || "")}
                     >
                         <Title>{data?.results[0].title}</Title>
                         <Overview>{data?.results[0].overview}</Overview>
                     </Banner>
                     <Slider>
                         <AnimatePresence initial={false} onExitComplete={toggleLeaving}>
-                            {/* 🏷️ initial 🏷️ onExitComplete */}
                             <Row
-                                variants={rowVariants} // 🏷️
+                                variants={rowVariants}
                                 initial="hidden"
                                 animate="visible"
                                 exit="exit"
-                                transition={{ type: "tween", duration: 1 }} // 🏷️ tween === linear animation
-                                key={index} // 🏷️ index를 바꿔서 다른 컴포넌트로 인식시켜서 exit 애니메이션을 실행
+                                transition={{ type: "tween", duration: 1 }} // 💡 tween => linear animation
+                                key={index} // ⭐️ index를 바꿔서 다른 컴포넌트로 인식시켜서 exit 애니메이션을 실행
                             >
                                 {data?.results
                                     .slice(1) // 첫 번째 요소를 제외한 나머지 요소들 반환
@@ -118,7 +74,7 @@ const Home = () => {
                                             bgphoto={makeImagePath(movie.backdrop_path, "w500")}
                                         >
                                             <Info variants={infoVariants}>
-                                                {/* 🏷️ 부모에서 설정된 animation 설정들이 그대로 상속된다. */}
+                                                {/* ⭐️ 부모에서 설정된 animation 설정들이 그대로 상속됨 */}
                                                 <h4>{movie.title}</h4>
                                             </Info>
                                         </Box>
@@ -162,6 +118,48 @@ const Home = () => {
     );
 };
 
+const rowVariants = {
+    hidden: {
+        // 💡 애니메이션으로 넘어갈 때 마지막과 처음 사이 붙어있는 부분 gap 주기 위해 10 추가 부여
+        x: window.outerWidth + 5,
+    },
+    visible: {
+        x: 0,
+    },
+    exit: {
+        x: -window.outerWidth - 5,
+    },
+};
+
+const boxVariants = {
+    normal: {
+        scale: 1,
+    },
+    hover: {
+        scale: 1.3,
+        y: -80,
+        transition: {
+            // hover 시에만 적용
+            delay: 0.1,
+            duaration: 0.1,
+            type: "tween", // spring -> linear
+        },
+    },
+};
+
+const infoVariants = {
+    hover: {
+        opacity: 0.8,
+        transition: {
+            delay: 0.2,
+            duaration: 0.1,
+            type: "tween",
+        },
+    },
+};
+
+const offset = 6;
+
 const Wrapper = styled.div`
     background: black;
     padding-bottom: 200px;
@@ -180,10 +178,9 @@ const Banner = styled.div<{ bgphoto: string }>`
     flex-direction: column;
     justify-content: center;
     padding: 60px;
+    // 🏷️ 배경화면을 겹쳐서 설정할 수 있다.
     background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 1)),
         url(${(props) => props.bgphoto});
-    // 🏷️ 배경화면을 겹쳐서 설정할 수 있다.
-    // 🏷️ 두 겹을 해놓는 이유는 글자가 바로 포스터와 겹치면 가독성이 떨어지기 때문
     background-size: cover;
 `;
 
@@ -221,6 +218,7 @@ const Box = styled(motion.div)<{ bgphoto: string }>`
     height: 8.5vw;
     border-radius: 10px;
     cursor: pointer;
+    // 🩹 [2023.02.06] Movie Box를 클릭한 후, 다시 돌아왔을 때 아래 css들이 적용되지 않는 현상
     &:first-child {
         transform-origin: center left; // 🏷️ 오른쪽으로만 커지도록 만들어서 짤리지 않도록
     }
@@ -236,6 +234,7 @@ const Info = styled(motion.div)`
     position: absolute;
     width: 100%;
     bottom: 0;
+    border-radius: 0 0 10px 10px;
     h4 {
         text-align: center;
         font-size: 16px;
